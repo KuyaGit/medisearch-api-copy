@@ -1,0 +1,147 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int                @id @default(autoincrement())
+  accountNo        String             @unique
+  name             String
+  email            String             @unique
+  password         String
+  userType         String
+  accountVerified  Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+  userJWT          UserJWT[]
+  userAddresses    UserAddress[]
+  customerOrders   CustomerOrder[]
+  pharmacy         Pharmacy?
+  pharmacyRatings  PharmacyRating[]
+  reservedMedicine ReservedMedicine[]
+}
+
+model UserAddress {
+  id        Int      @id @default(autoincrement())
+  label     String
+  address   String   @db.Text
+  coords    String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  user      User     @relation(references: [id], fields: [userId])
+}
+
+model UserJWT {
+  id        Int      @id @default(autoincrement())
+  token     String   @db.Text
+  isRevoked Boolean  @default(false)
+  userId    Int
+  user      User     @relation(references: [id], fields: [userId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Pharmacy {
+  id                Int                @id @default(autoincrement())
+  name              String             @unique
+  nameSlug          String             @unique
+  address           String             @db.Text
+  coords            String             @db.Text
+  storeHours        String
+  contactNumber     String
+  userId            Int                @unique
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  pharmacyRatings   PharmacyRating[]
+  reservedMedicines ReservedMedicine[]
+  medicines         Medicine[]
+  user              User               @relation(references: [id], fields: [userId])
+  pharmacyLogo      PharmacyLogo?
+}
+
+model PharmacyLogo {
+  id         Int       @id @default(autoincrement())
+  fileUrl    String    @unique
+  pharmacyId Int       @unique
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+  pharmacy   Pharmacy  @relation(references: [id], fields: [pharmacyId])
+}
+
+model PharmacyRating {
+  id              Int           @id @default(autoincrement())
+  rating          Int
+  feedback        String?
+  pharmacyId      Int
+  customerOrderId Int           @unique
+  userId          Int
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  pharmacy        Pharmacy      @relation(references: [id], fields: [pharmacyId])
+  customerOrder   CustomerOrder @relation(references: [id], fields: [customerOrderId])
+  user            User          @relation(references: [id], fields: [userId])
+}
+
+model Medicine {
+  id              Int              @id @default(autoincrement())
+  itemNumber      String           @unique
+  name            String           @unique
+  nameSlug        String           @unique
+  category        String
+  price           Float
+  quantity        Int
+  pharmacyId      Int
+  expirationDate  DateTime
+  reservationDate DateTime
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+  medicineRatings MedicineRating[]
+  pharmacy        Pharmacy         @relation(references: [id], fields: [pharmacyId])
+}
+
+model MedicineRating {
+  id              Int           @id @default(autoincrement())
+  rating          Int
+  medicineId      Int
+  customerOrderId Int           @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  medicine        Medicine      @relation(references: [id], fields: [medicineId])
+  customerOrder   CustomerOrder @relation(references: [id], fields: [customerOrderId])
+}
+
+model ReservedMedicine {
+  id              Int      @id @default(autoincrement())
+  pharmacyId      Int
+  customerId      Int
+  quantity        Int
+  reservationDate DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  pharmacy        Pharmacy @relation(references: [id], fields: [pharmacyId])
+  customer        User     @relation(references: [id], fields: [customerId])
+}
+
+model CustomerOrder {
+  id               Int             @id @default(autoincrement())
+  type             String
+  cartContent      String          @db.Text
+  userId           Int
+  medicineRatingId Int
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  user             User            @relation(references: [id], fields: [userId])
+  medicineRating   MedicineRating?
+  pharmacyRating   PharmacyRating?
+}
